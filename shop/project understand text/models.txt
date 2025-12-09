@@ -1,0 +1,337 @@
+✅ Category Model ব্যাখ্যা
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100,unique=True)
+    description = models.TextField(blank=True)
+
+🔍 প্রতিটি ফিল্ড কী কাজ করে?
+
+name:
+👉 ক্যাটেগরির নাম — যেমন "Electronics", "Books", "Shoes"
+
+slug:
+👉 এটি URL-friendly নাম।
+যেমন:
+
+Electronics → electronics
+
+Mobile Phones → mobile-phones
+এবং unique=True মানে দুইটা slug একই হবে না।
+
+description:
+👉 ক্যাটেগরির ছোটখাটো বর্ণনা। blank=True = ফাঁকা রাখা যাবে।
+
+Meta Class
+class Meta:
+    verbose_name_plural = 'Categories'
+
+
+👉 Django admin-এ "Categorys" না দেখিয়ে "Categories" দেখাবে।
+
+str
+def __str__(self):
+    return self.name
+
+
+👉 Django admin এ category নাম দেখাবে।
+
+✅ Product Model ব্যাখ্যা
+class Product(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=200,unique=True)
+    category = models.ForeignKey(Category,on_delete=models.CASCADE,related_name='products')
+    description = models.TextField()
+    price = models.DecimalField(max_digits=10,decimal_places=2)
+    stock = models.PositiveBigIntegerField(default=1)
+    available = models.BooleanField(default=True)
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    image = models.ImageField(upload_to='products/%Y/%m/%d')
+
+🔍 Field-wise Explanation
+
+name:
+প্রোডাক্ট নাম যেমন "iPhone 15", "HP Laptop"
+
+slug:
+প্রোডাক্ট URL-friendly নাম
+যেমন: iphone-15
+
+category (ForeignKey):
+Product কোন Category এর অন্তর্ভুক্ত তা নির্দেশ করে।
+যেমন:
+
+"iPhone" → Electronics Category
+
+on_delete=models.CASCADE
+👉 category delete হলে product গুলোও delete হবে।
+
+related_name='products'
+👉 Category থেকে product access করা যাবে:
+
+category.products.all()
+
+
+description:
+প্রোডাক্টের বর্ণনা।
+
+price:
+দাম। decimal_places=2 মানে like 1299.99
+
+stock:
+কত পরিমাণ stock আছে। PositiveBigIntegerField = negative হবে না।
+
+available:
+পণ্য available কিনা (True/False)
+
+created:
+প্রোডাক্ট কখন তৈরি হলো → timestamp
+
+updated:
+শেষবার কখন edit হলো → auto update
+
+image:
+ছবি upload হবে folder হিসেবে:
+
+products/2025/12/06/image.jpg
+
+⭐ Product Average Rating Method
+def average_rating(self):
+    ratings = self.ratings.all()
+    if ratings.count()>0:
+        return sum([rating.rating for rating in ratings])/ratings.count()
+
+🔍 Explanation:
+
+self.ratings মানে এই product-এর সব rating
+
+মোট rating যোগ → ভাগ দেই → average rating বের হয়
+যেমন: ratings: 5, 4, 3 → average = 4.0
+
+✅ Rating Model ব্যাখ্যা
+class Rating(models.Model):
+    product = models.ForeignKey(Product,on_delete=models.CASCADE, related_name='ratings')
+    user = models.ForeignKey(User,on_delete=models.CASCADE)
+    rating = models.PositiveSmallIntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
+    comment = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+
+🔍 Field-wise Explanation
+
+product:
+কোন product-কে rating দেওয়া হলো
+
+user:
+কোন user rating দিলো
+
+rating:
+শুধু 1 থেকে 5 পর্যন্ত মানই দেওয়া যাবে
+(validators দিয়ে চেক হয়)
+
+comment:
+review message যেমন: "Great product!"
+
+created:
+review কবে দেওয়া হলো
+
+🔐 Unique Constraint
+class Meta:
+    unique_together = ('product','user')
+
+
+👉 একজন user একটি product-এ একবারই rating দিতে পারবে।
+দুইবার দিতে চাইলে error হবে।
+
+str
+def __str__(self):
+    return f'{self.user.username} - {self.product.name} - {self.rating}'
+
+
+👉 Django admin এ display হবে:
+
+tamimur - iPhone 15 - 5
+
+🎉 সারসংক্ষেপ (Super Simple)
+Model	কাজ
+Category	প্রোডাক্টের গ্রুপ/ক্যাটেগরি
+Product	প্রোডাক্টের মূল তথ্য, দাম, ছবি
+Rating	কোন ইউজারের রেটিং + কমেন্ট
+
+Relationships:
+
+১টি Category → অনেক Product
+
+১টি Product → অনেক Rating
+
+১ User → ১ Product-এ শুধু ১টি rating দিতে পারে
+
+<---------------prompt 2----------rating a forign key keno use kora hoi--------------->
+✅ ForeignKey কী করে?
+
+ForeignKey শুধু বলে—
+
+একটি Rating → একটি Product এর সাথে লিংক হবে
+
+এবং একটি Rating → একটি User এর সাথে লিংক হবে
+
+কিন্তু ForeignKey limit করে না যে
+একজন user একটি product-এ একবারই rating দিতে পারবে।
+
+মানে:
+
+❌ শুধু ForeignKey থাকলে:
+
+একজন user একই product-এ
+৩ বার rating দিতে পারবে।
+
+কারণ ForeignKey বারবার pointing করতে পারে।
+
+✅ তাহলে ১ User → ১ Product → ১ Rating কিভাবে নিশ্চিত হয়?
+
+এই কাজটা করে:
+
+class Meta:
+    unique_together = ('product', 'user')
+
+
+এর মানে:
+
+👉 একই product এবং একই user combination
+ডাটাবেজে দ্বিতীয়বার insert করা যাবে না।
+
+উদাহরণ:
+product	user	rating	Allowed?
+iPhone	Tamim	5	✔ Allowed
+iPhone	Tamim	4	❌ Not allowed
+iPhone	Zisan	3	✔ Allowed
+Laptop	Tamim	5	✔ Allowed
+🔥 সহজ বাংলায় বুঝো:
+
+ForeignKey → সম্পর্ক তৈরি করে
+
+unique_together → একই relation যেন পুনরায় তৈরি না হয় তা নিয়ন্ত্রণ করে
+
+
+<------------------------prompt3---------------- keno in rating class e reating field e fk insted a One2one use kora hoi ni-------------------->
+সংক্ষেপে উত্তর: না — OneToOneField এখানে ব্যবহার করা ঠিক হবে না।
+
+কেন? চল ধাপে ধাপে সহজভাবে বুঝি।
+
+🔍 1. OneToOneField কী কাজ করে?
+
+OneToOne মানে:
+
+👉 একটি Product → শুধুমাত্র একটি Rating
+👉 একটি User → শুধুমাত্র একটি Rating
+
+অর্থাৎ পুরো প্রোজেক্টে মোট সর্বোচ্চ কয়েকটি রেটিং থাকবে।
+যা সম্পূর্ণ ভুল — কারণ প্রত্যেক product-এ অনেক user rating দিতে পারে।
+
+❌ কেন OneToOne ভুল?
+
+যদি তুমি OneToOne দাও:
+
+product = models.OneToOneField(Product, ...)
+user = models.OneToOneField(User, ...)
+
+
+তাহলে:
+
+এক Product → শুধু ১টা rating
+
+এক User → শুধু ১টা rating
+
+অনেক মানুষ একটি product-এ রেট দিতে পারবে না
+
+অনেক product-এ একজন user রেট দিতে পারবে না
+
+এটা পুরো rating system নষ্ট করে দেবে।
+
+✔ সঠিক সমাধান: Many-to-One + unique_together
+
+এটাই industry standard।
+
+Many users can rate 1 product
+
+1 user can rate many products
+
+কিন্তু ১ user একটি product-এ শুধু একবার রেট দিতে পারবে
+
+এটাই তোমার প্রয়োজন — এবং সেটা exactly unique_together দিয়ে হয়:
+
+class Meta:
+    unique_together = ('product','user')
+
+
+এটাই perfect।
+
+🔥 সহজ বানিয়ে বলি:
+Relationship	          চাওয়া?	          কেন?
+OneToOne	             ❌ না	            Product এ হাজার user রেট দিতে পারে
+ForeignKey(Many-to-One)	  ✔ হ্যাঁ	            User → many ratings, Product → many ratings
+unique_together	          ✔ হ্যাঁ	            একই user যেন একই product-এ শুধু ১বার rating দেয়
+
+
+⭐ উপসংহার (এক লাইনে):
+
+👉 OneToOne ব্যবহার করবে না → কারণ rating system এ multiple user reviews থাকা লাগে।
+👉 ForeignKey + unique_together = সঠিক ও best solution।
+
+<------------------------------ prompt 4 -------- auto_now_add এবং auto_now — এই দুইটার কাজ আলাদা।------>
+
+✅ 1. auto_now_add=True
+
+👉 Object যখন প্রথমবার তৈরি হয় তখন timestamp সেট হবে।
+👉 পরে update করলে আর পরিবর্তন হবে না।
+
+উদাহরণ:
+
+তুমি নতুন Product তৈরি করলে:
+
+created = এখনকার সময়
+
+পরবর্তীতে Product update করলে → created একই থাকবে
+
+কাজ:
+
+✔ Only once set
+✔ Creation time
+
+✅ 2. auto_now=True
+
+👉 প্রতিবার object update/save হলে timestamp update হয়।
+
+উদাহরণ:
+
+তুমি product update করলে:
+
+updated = এখনকার সময়
+
+যতবার save করবে — updated ততবার change হবে
+
+কাজ:
+
+✔ Every update
+✔ Last modified time
+
+📌 Short Summary (Super Simple)
+Field	,      কখন সময় সেট হয়?	        কখন আপডেট হয়?
+auto_now_add	object তৈরি হলে	           পরে আর না
+auto_now	    তৈরি হলে	               প্রতিবার save/update এ
+
+
+🧠 Example Timeline
+
+Product তৈরি করো →
+created = 2025-12-06 10:00 AM
+updated = 2025-12-06 10:00 AM
+
+৩০ মিনিট পরে Product edit করলে →
+created = same (change হবে না)
+updated = 2025-12-06 10:30 AM
+
+⭐ এক লাইনের সারসংক্ষেপ:
+
+👉 auto_now_add → created time
+👉 auto_now → last updated time
+
