@@ -47,6 +47,40 @@ class Rating(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.product.name} - {self.rating}'
+    
+
+class Cart(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now = True)
+
+    def __str__(self):
+        return f'Cart for {self.user.username}'
+    
+    def get_total_price(self):
+        items = self.items.all() # specific cart items
+        return sum(item.get_cost() for item in items)
+    
+    def get_total_qty(self):
+        qty = self.items.all()
+        return sum(qty.quantity for qty in qty)
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart,on_delete=models.CASCADE,related_name='items')
+    product = models.ForeignKey(Product,on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f'{self.quantity} X {self.product.name}'
+    
+    def get_cost(self):
+        return (self.product.price)*(self.quantity)
+
+
+    
+
+
 
 
 
