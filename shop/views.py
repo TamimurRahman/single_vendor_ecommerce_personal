@@ -6,6 +6,8 @@ from django.db.models import Min, Max, Avg, Q
 from . import models
 from .forms import RegistrationForm, RatingForms, CheckoutForm
 from django.contrib.auth.decorators import login_required
+from .utils import generate_sslcommerz_payment
+from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
 def home(request):
@@ -122,7 +124,7 @@ def cart_update(request,product_id):
         messages.success(request,f'cart updated successfully!')
     return  redirect('')
 
-
+@login_required
 def checkout(request):
     try:
         cart = models.Cart.objects.get(user=request.user)
@@ -161,6 +163,19 @@ def checkout(request):
         form = CheckoutForm(initial=initial_data)
         return render(request,'',{'cart':cart,'form':form})
 
+@csrf_exempt
+def payment_process(request):
+    order_id = request.session.get('order_id')
+    if not order_id:
+        return redirect('')
+    order = get_object_or_404(models.Order,id=order_id)
+    payment_data = generate_sslcommerz_payment(order,request)
+
+    if payment_data['status']=='SUCCESS':
+        return redirect(payment_data['GatewayPageURL'])
+    else:
+        messages.error(request,'Payment gateway error. Please Try again.')
+        return redirect('')
 
 def login_view(request):
     form = AuthenticationForm(request, data=request.POST or None)
