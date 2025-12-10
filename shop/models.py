@@ -1,15 +1,18 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.text import slugify
 
 # Create your models here.
 class Category(models.Model):
     name = models.CharField(max_length=100)
-    slug = models.SlugField(max_length=100,unique=True)
+    slug = models.SlugField(max_length=100,unique=True,null=True,blank=True)
     description = models.TextField(blank=True)
 
     class Meta:
         verbose_name_plural = 'Categories'
+    
+
 
     def __str__(self):
         return self.name
@@ -46,7 +49,7 @@ class Rating(models.Model):
         unique_together = ('product','user')
 
     def __str__(self):
-        return f'{self.user.username} - {self.product.name} - {self.rating}'
+        return f'{self.product.name} - {self.rating}'
     
 
 class Cart(models.Model):

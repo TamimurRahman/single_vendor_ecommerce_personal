@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+
+{% load crispy_forms_tags %}
+{% block title %}Login Page{% endblock %}
+
+{% block content %}
+
+<div class="container mt-5 d-flex justify-content-center">
+    <div class="card p-4 shadow-sm" style="width: 420px;">
+
+        <h4 class="text-center mb-3">🔐 User Login</h4>
+
+        {% if form.errors %}
+        <div class="alert alert-danger py-2">
+            ⚠ Incorrect username or password — please try again.
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form|crispy }}
+
+            <button type="submit" class="btn btn-primary w-100 mt-2">Login</button> or
+            <a href="{% provider_login_url 'google' next=request.GET.next %}">Google</a>
+        </form>
+
+        <div class="text-center mt-3">
+            <p class="mb-1">Don't have an account?</p>
+            <a href="{% url 'register' %}" class="btn btn-outline-secondary btn-sm w-100">Create Account</a>
+        </div>
+
+    </div>
+</div>
+
+{% comment %} alter native login er khetre {% endcomment %}
+{% comment %} <form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" name="username" id="username" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" name="password" id="password" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary w-100">Login</button>
+</form> {% endcomment %}
+
+{% endblock %}

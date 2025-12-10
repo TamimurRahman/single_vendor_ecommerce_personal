@@ -1,0 +1,104 @@
+✅ 1. RegistrationForm — (User Signup Form)
+class RegistrationForm(UserCreationForm):
+    email = forms.EmailField(required=True)
+    first_name = forms.CharField(required=True)
+    last_name=forms.CharField(required=True)
+
+🔍 এগুলো কী করছে?
+
+তুমি UserCreationForm inherit করেছো
+অর্থাৎ Django-এর default signup form নিচ্ছো এবং তাতে নিজের মতো field যোগ করছো।
+
+email field → বাধ্যতামূলক
+
+first_name → বাধ্যতামূলক
+
+last_name → বাধ্যতামূলক
+
+Meta class:
+class Meta:
+    model = User
+    fields = ['username','first_name','last_name','password1','password2']
+
+
+👉 এই form submit হলে User model-এ ডাটা সেভ হবে।
+
+👉 visible form fields:
+
+username
+
+first name
+
+last name
+
+password
+
+confirm password
+
+📌 email ফিল্ড তোমার form-এ আছে কিন্তু Meta fields-এ নাই, তাই
+এটা ইউজারের প্রোফাইলে সেভ হবে না।
+(তুমি চাইলে email Meta fields-এ যোগ করতে পারো।)
+
+✅ 2. RatingForm — (Product Rating & Review Form)
+class RatingForms(forms.ModelForm):
+    class Meta:
+        model = Rating
+        fields = ['rating','comment']
+
+🔍 কী করে?
+
+এই form ব্যবহার করে user কোনো product-এ rating এবং comment দিতে পারবে।
+
+model = Rating
+
+fields = rating + comment
+
+⭐ Widgets দিয়ে UI Customization
+widgets = {
+    'rating': forms.Select(choices=[(i, i) for i in range(1, 6)]),
+    'comment': forms.Textarea(attrs={'rows': 4})
+}
+
+→ rating field:
+
+Select dropdown হবে
+Option: 1, 2, 3, 4, 5
+(তালিকা dropdown এর মতো দেখাবে)
+
+→ comment field:
+
+Textarea হবে (একটি বড় input box)
+rows=4 → height হবে মাঝারি
+
+✅ 3. CheckoutForm — (Order Form)
+class CheckoutForm(forms.ModelForm):
+    class Meta:
+        model = Order
+        fields = ['first_name','last_name','email','address','postal_code','city','note']
+
+🔍 কী করে?
+
+Checkout পেজ থেকে customer এর Order details নেয়:
+
+First name
+
+Last name
+
+Email
+
+Address
+
+Postal code
+
+City
+
+Note
+
+Widgets:
+widgets = {
+    'note': forms.Textarea(attrs={'rows':3})
+}
+
+
+→ Note field textarea করা হয়েছে
+→ Rows=3 → ছোট height এর textarea
