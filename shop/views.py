@@ -55,7 +55,7 @@ def product_list(request,category_slug=None):
         'max_price':max_price,
     }
 
-    return render(request,'',context)
+    return render(request,'shop/product_list.html',context)
 
 def product_detail(request,slug):
     product = get_object_or_404(models.Product,slug=slug,available=True)
@@ -73,7 +73,7 @@ def product_detail(request,slug):
         'user_rating':user_rating,
         'rating_form':rating_form,
     }
-    return render(request,'',context)
+    return render(request,'shop/product_detail.html',context)
 
 @login_required
 def cart_detail(request):
@@ -82,7 +82,7 @@ def cart_detail(request):
     except models.Cart.DoesNotExist:
         cart = models.Cart.objects.create(user=request.user)
     
-    return render(request,'',{'cart':cart})
+    return render(request,'shop/cart.html',{'cart':cart})
 @login_required
 def cart_add(request,product_id):
     product = get_object_or_404(models.Product,id=product_id)
@@ -99,7 +99,9 @@ def cart_add(request,product_id):
         models.CartItem.objects.create(cart=cart,product=product,quantity=1)
     
     messages.success(request,f'{product.name} has been added to your cart!')
-    return redirect('')
+    return redirect('product_detail',slug=product.slug)
+
+
 @login_required
 def cart_remove(request,product_id):
     cart = get_object_or_404(models.Cart,user=request.user)
@@ -107,7 +109,9 @@ def cart_remove(request,product_id):
     cart_item = get_object_or_404(models.CartItem,cart=cart,product=product)
     cart_item.delete()
     messages.success(request, f'{product.name} has been removed from your cart!')
-    return redirect('')
+    return redirect('cart_detail')
+
+
 @login_required
 def cart_update(request,product_id):
     cart = get_object_or_404(models.Cart,user=request.user)
@@ -122,7 +126,7 @@ def cart_update(request,product_id):
         cart_item.quantity = quantity
         cart.save()
         messages.success(request,f'cart updated successfully!')
-    return  redirect('')
+    return  redirect('cart_detail')
 
 @login_required
 def checkout(request):
@@ -133,7 +137,7 @@ def checkout(request):
             return redirect('')
     except models.Cart.DoesNotExist:
         messages.warning(request,'Your cart is empty!')
-        return redirect('')
+        return redirect('cart_detail')
     
     if request.method == 'POST':
         form = CheckoutForm(request.POST)
@@ -150,7 +154,7 @@ def checkout(request):
                 )
             cart.items.all().delete()
             request.session['order_id'] = order.id
-            return redirect('')
+            return redirect('payment_process')
     else:
         initial_data={}
         if request.user.first_name:
@@ -161,14 +165,14 @@ def checkout(request):
             initial_data['email'] = request.user.email
         
         form = CheckoutForm(initial=initial_data)
-        return render(request,'',{'cart':cart,'form':form})
+        return render(request,'shop/checkout.html',{'cart':cart,'form':form})
 
 @csrf_exempt
 @login_required
 def payment_process(request):
     order_id = request.session.get('order_id')
     if not order_id:
-        return redirect('')
+        return redirect('home')
     order = get_object_or_404(models.Order,id=order_id)
     payment_data = generate_sslcommerz_payment(order,request)
 
@@ -176,7 +180,7 @@ def payment_process(request):
         return redirect(payment_data['GatewayPageURL'])
     else:
         messages.error(request,'Payment gateway error. Please Try again.')
-        return redirect('')
+        return redirect('checkout')
 
 @csrf_exempt
 @login_required
@@ -197,7 +201,7 @@ def payment_success(request,order_id):
         product.save()
     send_order_confirmation_email(order)
     messages.success(request,'Payment successful')
-    return redirect('')
+    return redirect('profile')
 
 @csrf_exempt
 @login_required
@@ -205,10 +209,62 @@ def payment_fail(request,order_id):
     order = get_object_or_404(models.Order,id=order_id,user=request.user)
     order.status = 'canceled'
     order.save()
-    return redirect('')
+    return redirect('checkout')
+
+@csrf_exempt
+@login_required
+def payment_cancel(request,order_id):
+    order = get_object_or_404(models.Order,id=order_id,user=request.user)
+    order.status = 'canceled'
+    order.save()
+    return redirect('cart_detail')
 
 
+@login_required
+def profile(request):
+    tab = request.GET.get('tab')
+    orders = models.Order.objects.filter(user=request.user).order_by('-created')
+    completed_orders = orders.filter(status='delivered').count()
+    total_spent = sum(order.get_tottal_cost for order in orders if order.paid)
+    order_history_active=(tab=='orders')
+    context={
+        'user':request.user,
+        'orders':orders,
+        'order history active':order_history_active,
+        'completed_orders':completed_orders,
+        'total_spent':total_spent
+    }
+    return render(request,'shop/profile.html',)
 
+@login_required
+def rate_product(request,product_id):
+    product = get_object_or_404(models.Product,id=product_id)
+    ordered_items = models.OrderItem.objects.filter(
+        order__user = request.user,
+        order__paid =True,
+        product=product,
+    )
+    if not ordered_items.exists():
+        messages.warning(request,'You can only rate products you have purchased')
+        return redirect('product_detail',slug=product.slug)
+    try:
+        rating = models.Rating.objects.get(product=product,user=request.user)
+    except models.Rating.DoesNotExists:
+        rating =None
+    if request.method=='POST':
+        form = RatingForms(request.POST,instance=rating)
+        if form.is_valid():
+            rating = form.save(commit=False)
+            rating.product = product
+            rating.user=request.user
+            rating.save()
+            return redirect('product_detail')
+    else:
+        form = RatingForms(instance=rating)
+    return render(request,'shop/rate_product.html',{
+        'form':form,
+        'product':product,
+    })
 
 def login_view(request):
     form = AuthenticationForm(request, data=request.POST or None)
@@ -220,6 +276,7 @@ def login_view(request):
             return redirect("home")
         else:
             messages.error(request, "Invalid username or password")
+            return redirect('register')
 
     return render(request, "shop/login.html", {"form": form})
 
