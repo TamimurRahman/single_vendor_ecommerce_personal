@@ -142,7 +142,7 @@ STATIC_URL = 'static/'
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 #for google login
 SOCIALACCOUNT_LOGIN_ON_GET = True
@@ -151,11 +151,25 @@ ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION =True
 LOGIN_URL = '/accounts/login/'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
-
+#payment gateway
 SSLCOMMERZ_STORE_ID = "eshop6939f324a51e1"
 SSLCOMMERZ_STORE_PASSWORD = "eshop6939f324a51e1@ssl"
 SSLCOMMERZ_PAYMENT_URL = "https://sandbox.sslcommerz.com/gwprocess/v3/api.php"
 SSLCOMMERZ_VALIDATION_URL = "https://sandbox.sslcommerz.com/validator/api/validationserverAPI.php"
+
+
+#Email setup
+# settings.py
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+
+EMAIL_HOST_USER = 'tamimr008@gmail.com'      # তোমার gmail
+EMAIL_HOST_PASSWORD = 'fisitchjwuzwrkoo'    # real password নয়!
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 

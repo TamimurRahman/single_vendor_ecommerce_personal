@@ -6,7 +6,7 @@ from django.db.models import Min, Max, Avg, Q
 from . import models
 from .forms import RegistrationForm, RatingForms, CheckoutForm
 from django.contrib.auth.decorators import login_required
-from .utils import generate_sslcommerz_payment
+from .utils import generate_sslcommerz_payment, send_order_confirmation_email
 from django.views.decorators.csrf import csrf_exempt
 # Create your views here.
 
@@ -164,6 +164,7 @@ def checkout(request):
         return render(request,'',{'cart':cart,'form':form})
 
 @csrf_exempt
+@login_required
 def payment_process(request):
     order_id = request.session.get('order_id')
     if not order_id:
@@ -177,6 +178,38 @@ def payment_process(request):
         messages.error(request,'Payment gateway error. Please Try again.')
         return redirect('')
 
+@csrf_exempt
+@login_required
+def payment_success(request,order_id):
+    order = get_object_or_404(models.Order,id=order_id,user=request.user)
+    order.paid = True
+    order.status = 'processing'
+    order.transaction_id = order.id
+    order.save()
+
+    order_items = order.items.all()
+    for item in order_items:
+        product = item.product
+        product.stock -= item.quantity
+
+        if product.stock <0:
+            product.stock = 0
+        product.save()
+    send_order_confirmation_email(order)
+    messages.success(request,'Payment successful')
+    return redirect('')
+
+@csrf_exempt
+@login_required
+def payment_fail(request,order_id):
+    order = get_object_or_404(models.Order,id=order_id,user=request.user)
+    order.status = 'canceled'
+    order.save()
+    return redirect('')
+
+
+
+
 def login_view(request):
     form = AuthenticationForm(request, data=request.POST or None)
 
@@ -189,6 +222,8 @@ def login_view(request):
             messages.error(request, "Invalid username or password")
 
     return render(request, "shop/login.html", {"form": form})
+
+
 
 #alternative login er khetre amr manually HTML file make korte hobe
 '''
