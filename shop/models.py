@@ -64,7 +64,7 @@ class Cart(models.Model):
         items = self.items.all() # specific cart items
         return sum(item.get_cost() for item in items)
     
-    def get_total_qty(self):
+    def get_total_items(self):
         qty = self.items.all()
         return sum(qty.quantity for qty in qty)
 
