@@ -401,9 +401,11 @@
                         </a>
                         <form action="{% url 'shop:cart_add' product.id %}" method="post">
                             {% csrf_token %}
+                            {% if product.stock > 0 %}
                             <button type="submit" class="btn btn-sm btn-primary w-100">
                                 <i class="fas fa-shopping-cart me-1"></i> Add to Cart
                             </button>
+                            {% else %}Out of Stock{% endif %}
                         </form>
                     </div>
                 </div>
