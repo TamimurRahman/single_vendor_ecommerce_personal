@@ -1,6 +1,12 @@
 from django.contrib import admin
 from django.urls import path,include
 from .import views
+from django.conf import settings
+from django.conf.urls.static import static
+
+
+app_name = 'shop'
+
 urlpatterns = [
     path('login/',views.login_view,name='login'),
     path('register/',views.register_view,name='register'),
@@ -22,8 +28,10 @@ urlpatterns = [
     path('payment/fail/<int:order_id>/',views.payment_fail,name='payment_fail'),
     path('payment/cancel/<int:order_id>/',views.payment_cancel,name='payment_cancel'),
 
-    path('profiile/',views.profile,name='profile'),
+    path('profile/',views.profile,name='profile'),
     path('rate/<int:product_id>/',views.rate_product,name='rate_product') 
 
 
 ]
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+

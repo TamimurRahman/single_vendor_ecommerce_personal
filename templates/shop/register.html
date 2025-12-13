@@ -20,7 +20,7 @@
 
         <div class="text-center mt-3">
             <p class="mb-1">Already have an account?</p>
-            <a href="{% url 'login' %}" class="btn btn-outline-secondary btn-sm w-100">
+            <a href="{% url 'shop:login' %}" class="btn btn-outline-secondary btn-sm w-100">
                 Login
             </a> or
             <a href="{% provider_login_url 'google' next=request.GET.next %}">Google</a>

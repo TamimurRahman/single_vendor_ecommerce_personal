@@ -29,10 +29,27 @@ def generate_sslcommerz_payment(order,request):
     return json.loads(response.text)
 
 
+
 def send_order_confirmation_email(order):
     subject = f'Order Confirmation - Order #{order.id}'
-    message = render_to_string('',{'order':order})
-    to = order.email
-    send_email = EmailMultiAlternatives(subject,'',to=[to])
-    send_email.attach_alternative(message,'text/html')
-    send_email.send()
+
+    # ✅ HTML template render
+    message = render_to_string(
+        'shop/email/order_confirmation.html',
+        {'order': order}
+    )
+
+    # ✅ receiver
+    to_email = order.email
+
+    # ✅ email object
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body='Thank you for your order.',   # fallback text
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[to_email],
+    )
+
+    # ✅ HTML attach
+    email.attach_alternative(message, 'text/html')
+    email.send()
